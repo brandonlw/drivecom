@@ -158,7 +158,8 @@ class FlashDrive(object):
 
     def initialize(self):
         if self.device is not None:
-            self.detach_kernel_driver()
+            if use_libusb and not use_win:
+                self.detach_kernel_driver()
 
             self.device.set_configuration()
             cfg = self.device.get_active_configuration()
