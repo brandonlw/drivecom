@@ -19,6 +19,9 @@ import queue
 import ctypes
 import time
 
+# Uncomment to enable debug output
+# os.environ['PYUSB_DEBUG'] = 'debug'
+
 # Try importing windll on Windows
 use_win = True
 try:
@@ -140,8 +143,24 @@ class FlashDrive(object):
         self.data_remaining = 0
         self.incoming_data = None
 
+    def detach_kernel_driver(self):
+        print('Detaching claimed interface(s)')
+        c = 1
+        for config in self.device:
+            print('\tChecking Config {} Interfaces {}:'.format(c, config.bNumInterfaces))
+            for i in range(config.bNumInterfaces):
+                if self.device.is_kernel_driver_active(i):
+                    self.device.detach_kernel_driver(i)
+                    print('\t\tDetaching interface #{}'.format(i))
+                else:
+                    print('\t\tInterface #{} not claimed'.format(i))
+            c += 1
+
     def initialize(self):
         if self.device is not None:
+            if use_libusb and not use_win:
+                self.detach_kernel_driver()
+
             self.device.set_configuration()
             cfg = self.device.get_active_configuration()
             intf = usb.util.find_descriptor(cfg, bInterfaceClass=USB_MSD_CLASS,
